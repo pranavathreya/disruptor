@@ -1,9 +1,11 @@
 import java.nio.ByteBuffer;
 
-public class OffHeapRingBuffer implements DataProvider<ByteBuffer> {
-    public int cursor;
+public class OffHeapRingBuffer {
+    public int cursor = 0;
     private final int entrySize;
+    private final int bufferSize;
     private final ByteBuffer buffer;
+    private boolean readNow;
 
     ThreadLocal<ByteBuffer> perThreadBuffer =
             new ThreadLocal <ByteBuffer>() {
@@ -11,48 +13,40 @@ public class OffHeapRingBuffer implements DataProvider<ByteBuffer> {
                     return buffer.duplicate();
                 }
             };
-
-    public OffHeapRingBuffer(Sequencer sequencer,
-                             int entrySize) {
-        this.sequencer = sequencer;
+    public OffHeapRingBuffer(int entrySize, int bufferSize) {
         this.entrySize = entrySize;
+        this.bufferSize = bufferSize;
         buffer = ByteBuffer.allocateDirect(
-                sequencer.getBufferSize() * entrySize
+                bufferSize * entrySize
         );
    }
-
-   private int index(long cursor) {
-       // TODO: Enforce 2^n buffer size; bit masking
-        long idx = cursor % sequencer.getBufferSize();
-        return (int) idx;
-   }
-
-   public ByteBuffer get(long cursor) {
-        int index = index(cursor);
-        int position = index * entrySize;
-        int limit = position + entrySize;
-
-        ByteBuffer byteBuffer = perThreadBuffer.get();
-        byteBuffer.position(position).limit(limit);
-
-        return byteBuffer;
-   }
-
    public void put(byte[] data) {
-        long next = sequencer.next();
-        try {
-            get(next).put(data);
+        System.out.println(perThreadBuffer.get());
+        int startPosition = perThreadBuffer.get().position();
+        int newPosition = ( startPosition + entrySize ) % ( bufferSize * entrySize );
+       // TODO: Enforce 2^n buffer size; bit masking
+       try {
+            perThreadBuffer.get().put(data);
+            System.out.println(perThreadBuffer.get());
         } finally {
-            sequencer.publish();
+            perThreadBuffer.get().position(newPosition);
+            cursor++;
+            notify();
         }
    }
-
-   public long next() {
-        return sequencer.next();
+   public byte[] get() throws InterruptedException {
+        while (!readNow) {
+            wait();
+        }
+       int startPosition = perThreadBuffer.get().position();
+       int newPosition = ( startPosition + entrySize ) % ( bufferSize * entrySize );
+       // TODO: Enforce 2^n buffer size; bit masking
+       byte[] data = new byte[] {};
+       for (int i=0; i<entrySize; i++) {
+           data[i] = perThreadBuffer.get().get();
+       }
+       perThreadBuffer.get().position(newPosition);
+       readNow = false;
+       return data;
    }
-
-    public void publish() {
-        sequencer.publish();
-    }
-
 }

@@ -1,25 +1,22 @@
+import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
 
 public class Main {
-    public static void main(String[] args) {
-        SingleProducerSequencer sequencer = new SingleProducerSequencer();
+    public static void main (String[] args) {
         int entrySize = 4;
+        int bufferSize = 10;
         OffHeapRingBuffer offHeapRingBuffer =
-                new OffHeapRingBuffer(sequencer,
-                        entrySize);
+                new OffHeapRingBuffer(entrySize, bufferSize);
 
-        // Each processor runs on a separate thread
-        //EXECUTOR.submit(batchProcessor);
+        // Thread: Ring Buffer viewer
+        RingBufferViewer ringBufferViewer = new RingBufferViewer(offHeapRingBuffer);
+        Thread ringBufferViewerThread = new Thread(ringBufferViewer);
+        ringBufferViewerThread.start();
 
-        // Publishers claim events in sequence
-        long cursor = offHeapRingBuffer.next();
-
-
-        // publish the event so it is available to EventProcessors
-        offHeapRingBuffer.publish();
-
-        for(int i=0; i<byteBuffer.limit()-1; ++i){
-            System.out.println(byteBuffer.get());
-        }
+        // Thread: Producer
+        Producer producer = new Producer(offHeapRingBuffer);
+        Thread producerThread = new Thread(producer);
+        producerThread.start();
     }
 }
+
