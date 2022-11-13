@@ -7,14 +7,15 @@ public class Producer implements Runnable {
         this.offHeapRingBuffer = offHeapRingBuffer;
     }
     public void run () {
-        byte[] data = new byte[] { (byte)120, (byte)120, (byte)120 };
-        while (true) {
+        for (int i=0; i<21; i++) {
+            byte[] data = new byte[] { (byte)i, (byte)i, (byte)i };
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            System.out.println( "putting in:"+data );
+            System.out.println(Thread.currentThread().getName()+" putting in: "+
+                    i+", "+i+", "+i+"." );
             offHeapRingBuffer.put(data);
         }
     }

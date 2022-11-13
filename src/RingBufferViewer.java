@@ -8,12 +8,13 @@ public class RingBufferViewer implements Runnable {
     }
     public void run () {
         offHeapRingBuffer.perThreadBuffer.get().mark();
+        System.out.println(Thread.currentThread().getName()+": ");
         while (true) {
-            //System.out.println("\n" + perThreadBuffer.get());
-            for (int i = 0; i < offHeapRingBuffer.perThreadBuffer.get().limit() - 1; i++) {
+            for (int i = 0; i < offHeapRingBuffer.perThreadBuffer.get().limit(); i++) {
                 System.out.print(offHeapRingBuffer.perThreadBuffer.get().get() + ", ");
             }
-            System.out.print("\nCursor: "+offHeapRingBuffer.cursor);
+            System.out.println("\n"+Thread.currentThread().getName()+
+                    " Cursor: "+offHeapRingBuffer.cursor);
             try {
                 Thread.sleep(5000);
             } catch (InterruptedException e) {
