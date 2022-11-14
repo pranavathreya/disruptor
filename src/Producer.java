@@ -17,6 +17,7 @@ public class Producer implements Runnable {
             System.out.println(Thread.currentThread().getName()+" putting in: "+
                     i+", "+i+", "+i+"." );
             offHeapRingBuffer.put(data);
+            System.out.println(Thread.currentThread().getName()+": main cursor: "+offHeapRingBuffer.cursor);
         }
     }
 }
