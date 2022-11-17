@@ -1,5 +1,3 @@
-import java.nio.ByteBuffer;
-
 public class Producer implements Runnable {
     private OffHeapRingBuffer offHeapRingBuffer;
 
@@ -19,5 +17,6 @@ public class Producer implements Runnable {
             offHeapRingBuffer.put(data);
             System.out.println(Thread.currentThread().getName()+": main cursor: "+offHeapRingBuffer.cursor);
         }
+        offHeapRingBuffer.finished = true;
     }
 }

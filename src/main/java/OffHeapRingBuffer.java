@@ -2,6 +2,7 @@ import java.nio.ByteBuffer;
 
 public class OffHeapRingBuffer {
     public static int cursor = 0;
+    public static boolean finished = false;
     public final int entrySize;
     public final int bufferSize;
     private final ByteBuffer buffer;

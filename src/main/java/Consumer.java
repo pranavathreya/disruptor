@@ -10,8 +10,8 @@ public class Consumer implements Runnable{
         this.offHeapRingBuffer = offHeapRingBuffer;
     }
     public void run () {
-        while (true) {
-            while (consumerCursor==offHeapRingBuffer.cursor) {
+        while (!offHeapRingBuffer.finished) {
+            while ((consumerCursor==offHeapRingBuffer.cursor)) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {

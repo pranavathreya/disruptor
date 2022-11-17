@@ -1,8 +1,17 @@
-import java.lang.invoke.MethodHandle;
-import java.nio.ByteBuffer;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main {
-    public static void main (String[] args) {
+    public static void main(String[] args) {
+        Logger logger = LoggerFactory.getLogger(Main.class);
+        logger.info("info log {}", Main.class);
+        logger.debug("Hello world.");
+
+        // print internal state
+        LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+        StatusPrinter.print(lc);
         int entrySize = 4;
         int bufferSize = 10;
         OffHeapRingBuffer offHeapRingBuffer =
@@ -29,4 +38,3 @@ public class Main {
         consumer2Thread.start();
     }
 }
-

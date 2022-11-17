@@ -1,5 +1,3 @@
-import java.nio.ByteBuffer;
-
 public class RingBufferViewer implements Runnable {
     private OffHeapRingBuffer offHeapRingBuffer;
 
