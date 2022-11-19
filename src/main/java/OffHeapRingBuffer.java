@@ -21,13 +21,10 @@ public class OffHeapRingBuffer {
         );
    }
     public void put(byte[] data) {
-    //        System.out.println(perThreadBuffer.get());
         int startPosition = perThreadBuffer.get().position();
-        int newPosition = ( startPosition + entrySize ) % ( bufferSize * entrySize );
-       // TODO: Enforce 2^n buffer size; bit masking
+        int newPosition = ( startPosition + entrySize ) & ( (bufferSize * entrySize) - 1 );
         try {
             perThreadBuffer.get().put(data);
-        //            System.out.println(perThreadBuffer.get());
         } finally {
             perThreadBuffer.get().position(newPosition);
             cursor++;

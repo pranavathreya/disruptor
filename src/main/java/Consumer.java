@@ -1,46 +1,57 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 public class Consumer implements Runnable{
     int consumerCursor = 0;
     private OffHeapRingBuffer offHeapRingBuffer;
     private boolean hasRead;
-    ByteBuffer data;
+    private String messageFileName;
+    private long mappedBufferPosition = 0;
+    private MappedByteBuffer data;
 
     public Consumer (OffHeapRingBuffer offHeapRingBuffer) {
         this.offHeapRingBuffer = offHeapRingBuffer;
     }
     public void run () {
-        while (!offHeapRingBuffer.finished) {
-            while ((consumerCursor==offHeapRingBuffer.cursor)) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+        messageFileName = Thread.currentThread().getName()+".txt";
+        try (FileChannel fc = FileChannel.open(Path.of(messageFileName), StandardOpenOption.WRITE,
+                StandardOpenOption.READ)) {
+            while (!offHeapRingBuffer.finished) {
+                while ((consumerCursor == offHeapRingBuffer.cursor)) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
-            }
-            ByteBuffer data = ByteBuffer.allocateDirect(offHeapRingBuffer.entrySize
-                    * (offHeapRingBuffer.cursor - consumerCursor));
-            data.mark();
-            while (consumerCursor < offHeapRingBuffer.cursor) {
-                int startPosition = (consumerCursor % offHeapRingBuffer.bufferSize)
-                        * offHeapRingBuffer.entrySize;
-                offHeapRingBuffer.perThreadBuffer.get().position(startPosition);
-                // TODO: Enforce 2^n buffer size; bit masking
-                for (int i=0; i<offHeapRingBuffer.entrySize; i++) {
-                    data.put(offHeapRingBuffer.perThreadBuffer.get().get());
+                long mappedBufferSize = (offHeapRingBuffer.cursor - consumerCursor) * offHeapRingBuffer.entrySize;
+                MappedByteBuffer data = fc.map(FileChannel.MapMode.READ_WRITE,
+                        mappedBufferPosition, mappedBufferSize
+                        );
+                while (consumerCursor < offHeapRingBuffer.cursor) {
+                    int startPosition = (consumerCursor & (offHeapRingBuffer.bufferSize-1))
+                            * offHeapRingBuffer.entrySize;
+                    offHeapRingBuffer.perThreadBuffer.get().position(startPosition);
+                    for (int i = 0; i < offHeapRingBuffer.entrySize; i++) {
+                        data.put(offHeapRingBuffer.perThreadBuffer.get().get());
+                    }
+                    if (offHeapRingBuffer.perThreadBuffer.get().position() ==
+                            offHeapRingBuffer.perThreadBuffer.get().limit()) {
+                        offHeapRingBuffer.perThreadBuffer.get().position(0);
+                    }
+                    consumerCursor++;
                 }
-                if (offHeapRingBuffer.perThreadBuffer.get().position() ==
-                        offHeapRingBuffer.perThreadBuffer.get().limit()) {
-                    offHeapRingBuffer.perThreadBuffer.get().position(0);
-                }
-                consumerCursor++;
+                mappedBufferPosition = mappedBufferPosition + mappedBufferSize;
             }
-            data.reset();
-            System.out.print(Thread.currentThread().getName()+" received: ");
-            while (data.position()<data.limit()) {
-                System.out.print(data.get()+", ");
-            }
-            System.out.println();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }
