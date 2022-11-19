@@ -6,15 +6,12 @@ public class Producer implements Runnable {
     }
     public void run () {
         for (int i=0; i<21; i++) {
-            byte[] data = new byte[] { (byte)i, (byte)i, (byte)i };
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            byte[] inputBytes = new byte[] {
+                    (byte) 0x53, (byte) 0x41, (byte) 0x53, (byte) 0x0A,
+            };
             System.out.println(Thread.currentThread().getName()+" putting in: "+
                     i+", "+i+", "+i+"." );
-            offHeapRingBuffer.put(data);
+            offHeapRingBuffer.put(inputBytes);
             System.out.println(Thread.currentThread().getName()+": main cursor: "+offHeapRingBuffer.cursor);
         }
         offHeapRingBuffer.finished = true;
